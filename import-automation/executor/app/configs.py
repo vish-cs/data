@@ -85,7 +85,7 @@ class ExecutorConfig:
     # Oauth Client ID used to authenticate with the proxy.
     importer_oauth_client_id: str = ''
     # URL for the import executor container image.
-    executor_docker_image: str = 'gcr.io/datcom-ci/dc-import-executor:latest'
+    importer_docker_image: str = 'gcr.io/datcom-ci/dc-import-executor:stable'
     # Access token of the account used to authenticate with GitHub. This is not
     # the account password. See
     # https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token.
@@ -108,13 +108,17 @@ class ExecutorConfig:
     # ID of the location where Cloud Scheduler is hosted.
     scheduler_location: str = 'us-central1'
     # Location of the local git data repo.
-    local_repo_dir: str = '/workspace/data'
+    local_repo_dir: str = '/data'
     # Maximum time a user script can run for in seconds.
     user_script_timeout: float = 3600
     # Arguments for the user script
     user_script_args: List[str] = ()
     # Environment variables for the user script
     user_script_env: dict = None
+    # Invoke validations before upload.
+    invoke_import_validation: bool = False
+    # Import validation config file.
+    validation_config_file: str = 'tools/import_validation/validation_config.json'
     # Maximum time venv creation can take in seconds.
     venv_create_timeout: float = 3600
     # Maximum time downloading a file can take in seconds.
@@ -125,8 +129,10 @@ class ExecutorConfig:
     email_account: str = ''
     # The corresponding password, app password, or access token.
     email_token: str = ''
-    # Disbale email alert notifications.
+    # Disable email alert notifications.
     disable_email_notifications: bool = False
+    # Skip uploading the data to GCS (for local testing).
+    skip_gcs_upload: bool = False
     # Maximum time a blocking call to the importer to
     # perform an import can take in seconds.
     importer_import_timeout: float = 20 * 60
@@ -134,8 +140,8 @@ class ExecutorConfig:
     # delete an import can take in seconds.
     importer_delete_timeout: float = 10 * 60
     # Executor type depends on where the executor runs
-    # Suppports one of: "GKE", "GAE"
-    executor_type: str = 'GAE'
+    # Suppports one of: "GKE", "GAE", "CLOUD_RUN"
+    executor_type: str = 'CLOUD_RUN'
 
     def get_data_refresh_config(self):
         """Returns the config used for Cloud Scheduler data refresh jobs."""
