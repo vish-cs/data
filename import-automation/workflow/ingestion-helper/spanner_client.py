@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import os
 from google.cloud import spanner
 from google.cloud.spanner_v1 import Transaction
 from google.cloud.spanner_v1.param_types import STRING, TIMESTAMP, Array, INT64
@@ -185,6 +186,25 @@ class SpannerClient:
             transaction.insert_or_update(table="IngestionHistory",
                                          columns=columns,
                                          values=values)
+
+            # 3. Update ImportVersionHistory table
+            version_history_columns = [
+                "ImportName", "Version", "UpdateTimestamp", "Comment"
+            ]
+            version_history_values = []
+            for import_json in import_list_json:
+                version_history_values.append([
+                    import_json['importName'],
+                    os.path.basename(import_json['latestVersion']),
+                    spanner.COMMIT_TIMESTAMP,
+                    "ingestion-workflow:" + workflow_id
+                ])
+
+            if version_history_values:
+                transaction.insert(table="ImportVersionHistory",
+                                   columns=version_history_columns,
+                                   values=version_history_values)
+
             logging.info(
                 f"Updated ingestion history table for workflow {workflow_id}")
 
@@ -198,10 +218,10 @@ class SpannerClient:
         """Updates the status for the specified import job."""
         import_name = params['import_name']
         job_id = params['job_id']
-        exec_time = params['exec_time']
+        execution_time = params['execution_time']
         data_volume = params['data_volume']
         status = params['status']
-        version = params['version']
+        latest_version = params['latest_version']
         next_refresh = params['next_refresh']
         graph_paths = params['graph_paths']
         logging.info(f"Updating import status for {import_name} to {status}")
@@ -214,8 +234,9 @@ class SpannerClient:
             ]
 
             row_values = [
-                import_name, status, job_id, exec_time, data_volume,
-                next_refresh, version, graph_paths, spanner.COMMIT_TIMESTAMP
+                import_name, status, job_id, execution_time, data_volume,
+                next_refresh, latest_version, graph_paths,
+                spanner.COMMIT_TIMESTAMP
             ]
 
             if status == 'READY':
@@ -236,7 +257,7 @@ class SpannerClient:
             raise
 
     def update_version_history(self, import_name: str, version: str,
-                               caller: str, comment: str):
+                               comment: str):
         """Updates the version history table.
 
         Args:
@@ -244,15 +265,12 @@ class SpannerClient:
             version: The version string.
             comment: The comment for the update.
         """
+        import_name = import_name.split(':')[-1]
         logging.info(f"Updating version history for {import_name} to {version}")
 
         def _record(transaction: Transaction):
-            columns = [
-                "ImportName", "Version", "UpdateTimestamp", "Caller", "Comment"
-            ]
-            values = [[
-                import_name, version, spanner.COMMIT_TIMESTAMP, caller, comment
-            ]]
+            columns = ["ImportName", "Version", "UpdateTimestamp", "Comment"]
+            values = [[import_name, version, spanner.COMMIT_TIMESTAMP, comment]]
             transaction.insert(table="ImportVersionHistory",
                                columns=columns,
                                values=values)

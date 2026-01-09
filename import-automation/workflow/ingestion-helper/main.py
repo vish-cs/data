@@ -126,10 +126,12 @@ def ingestion_helper(request):
         #   importName: name of the import
         #   status: new status
         #   jobId: Dataflow job ID (optional)
-        #   execTime: execution time in seconds (optional)
+        #   executionTime: execution time in seconds (optional)
         #   dataVolume: data volume in bytes (optional)
-        #   version: version string (optional)
+        #   latestVersion: latest version string (optional)
+        #   graphPaths: graph path list(optional)
         #   schedule: cron schedule string (optional)
+        #   nextRefresh: next refresh timestamp (optional)
         validation_error = _validate_params(request_json,
                                             ['importName', 'status'])
         if validation_error:
@@ -156,16 +158,16 @@ def ingestion_helper(request):
         comment = request_json['comment']
         short_import_name = import_name.split(':')[-1]
         caller = import_utils.get_caller_identity(request)
+        comment = comment + ' caller:' + caller
         logging.info(
-            f"Import {short_import_name} version {version} caller: {caller} comment: {comment}"
-        )
+            f"Import {short_import_name} version {version} comment: {comment}")
         if version == 'staging':
             version = storage.get_staging_version(import_name)
         summary = storage.get_import_summary(import_name, version)
-        params = import_utils.create_import_params(summary)
+        params = import_utils.get_import_params(summary)
         params['status'] = 'READY'
         storage.update_version_file(import_name, version)
-        spanner.update_version_history(import_name, version, caller, comment)
+        spanner.update_version_history(import_name, version, comment)
         spanner.update_import_status(params)
         return (f'Updated import {short_import_name} to version {version}', 200)
     else:

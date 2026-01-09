@@ -75,8 +75,8 @@ main:
                     jobId: ${jobId}
                     importName: ${text.split(args.importName, ":")[1]}
                     status: 'FAILED'
-                    execTime: ${int(sys.now() - startTime)}
-                    version: ${"gs://" + gcsImportBucket + "/" + text.replace_all(args.importName, ":", "/")}
+                    executionTime: ${int(sys.now() - startTime)}
+                    latestVersion: ${"gs://" + gcsImportBucket + "/" + text.replace_all(args.importName, ":", "/")}
                     schedule: ${default(map.get(args, "schedule"), "")}
                 result: functionResponse
             - failWorkflow:
@@ -91,7 +91,7 @@ main:
             actionType: 'update_import_version'
             importName: ${args.importName}
             version: 'staging'
-            comment: 'import-automation'
+            comment: '${"import-workflow:" + sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}'
         result: functionResponse
     - returnResult:
         return:

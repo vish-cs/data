@@ -41,10 +41,13 @@ Updates the status of a specific import job.
 *   `importName` (Required): The name of the import.
 *   `status` (Required): The new status to set.
 *   `jobId` (Optional): The Dataflow job ID.
-*   `execTime` (Optional): Execution time in seconds.
+*   `executionTime` (Optional): Execution time in seconds.
 *   `dataVolume` (Optional): Data volume in bytes.
-*   `version` (Optional): The version string.
+*   `latestVersion` (Optional): Latest version string.
+*   `graphPaths` (Optional): Graph path list.
 *   `schedule` (Optional): A cron schedule string.
+*   `nextRefresh` (Optional): Next refresh timestamp.
+
 
 #### `update_import_version`
 Updates the version of an import, records an audit log, and marks the import as `READY`.
